@@ -1,0 +1,34 @@
+/*Resolver con PASAJE DE MENSAJES ASINCRÓNICO (PMA) el siguiente problema. En un negocio de cobros digitales
+hay P personas que deben pasar por la única caja de cobros para realizar el pago de sus boletas. Las personas son
+atendidas de acuerdo con el orden de llegada, teniendo prioridad aquellos que deben pagar menos de 5 boletas de
+los que pagan más. Adicionalmente, las personas embarazadas tienen prioridad sobre los dos casos anteriores. Las
+personas entregan sus boletas al cajero y el dinero de pago; el cajero les devuelve el vuelto y los recibos de pago.*/
+chan Embarazada_anciano(string,int,int);
+chan general(string,int,int);
+chan Pago_menosDe5(string,int,int);
+chan resultado[1..P](int,string);
+process persona[id:1..P]{
+    if(len(boletas)>5)->
+        send general(id,boleta,pago);
+    if(soyEmbarazada_anciano())->
+        send Embarazada_anciano(boleta,id,pago);
+    if(len(boletas)<5)->
+            send Pago_menosDe5(boleta,id,pago);
+    send señal();
+    receive resultad(vuelto,recibo);
+}
+}
+process caja{
+    String boleta,recibo;
+    int vuelto,pago,idP; 
+    recive señal();
+    if(not empty(Embarazada_anciano))->
+        receive Embarazada_anciano(boleta,idP,pago);
+    if(not empty(Pago_menosDe5)and not empty(Embarazada_anciano))->
+        receive Pago_menosDe5(boleta,idP,pago);
+    if(not empty(Embarazada_anciano)and  not empty (Pago_menosDe5) and  empty(general))->
+        receive general(boleta,idP,pago);
+    vuelto=GenerarVuelvo(boleta,pago);
+    recibo=GenerarRecibo(boleta);
+    send resultado[idP](vuelto,recibo);
+}
