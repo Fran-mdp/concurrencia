@@ -1,0 +1,55 @@
+/*Simular la atención en un locutorio con 10 cabinas telefónicas, que tiene un empleado que
+se encarga de atender a los clientes. Hay N clientes que al llegar esperan hasta que el
+empleado les indica a que cabina ir, la usan y luego se dirigen al empleado para pagarle. El
+empleado atiende a los clientes en el orden en que hacen los pedidos, pero siempre dando
+prioridad a los que terminaron de usar la cabina. Nota: maximizar la concurrencia; suponga
+que hay una función Cobrar() llamada por el empleado que simula que el empleado le cobra
+al cliente*/
+chan pedido(int);          // Canal para que los clientes pidan cabinas
+chan termine(int);         // Canal para que los clientes informen que terminaron de usar la cabina
+chan usar[N](int);         // Canal para que el empleado asigne una cabina a cada cliente
+
+process clientes[id: 0..N-1] {
+    int cabina;
+    while (true) {
+        // Solicitar una cabina
+        send pedido(id);
+
+        // Esperar asignación de una cabina
+        receive usar[id](cabina);
+
+        // Usar la cabina (simulación)
+        usarCabina(cabina);
+
+        // Informar que terminó de usar la cabina
+        send termine(cabina);
+    }
+}
+
+process empleado {
+    queue cabinas_libres;  // Cola de cabinas disponibles
+    int idC, num;
+
+    // Inicializar la cola con todas las cabinas
+    for (int i = 0; i < 10; i++) {
+        push(cabinas_libres, i);
+    }
+
+    while (true) {
+        // Priorizar clientes que terminaron de usar una cabina
+        if (not empty(termine)) {
+            receive termine(num);
+
+            // Marcar la cabina como libre
+            push(cabinas_libres, num);
+        } 
+        // Atender a clientes que piden una cabina
+        else if (not empty(pedido) && not empty(cabinas_libres)) {
+            receive pedido(idC);
+
+            // Asignar una cabina libre al cliente
+            pop(cabinas_libres, num);
+            send usar[idC](num);
+        }
+    }
+}

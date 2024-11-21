@@ -1,0 +1,36 @@
+/*5. En una oficina hay un empleado para atender a N personas. Las personas pueden tener
+prioridad ALTA o BAJA (cada uno conoce su prioridad). El empleado atiende a las personas
+de acuerdo a la prioridad (primero los de ALTA y luego los de BAJA). Cada persona espera
+hasta que el empleado lo termina de atender y se retira. Nota: existe la función atender() que
+simula que el empleado está atendiendo a una persona; no debe hacerse Busy Waiting.
+*/
+chan Alta(int);
+chan Baja(int);
+chan terminoA[1..n]();
+chan terminaB[1..n]();
+process Persona[id:1..N]{
+    if(soyPrioridadAlta){send Alta(id);
+        receive terminoA[id]();
+    }
+    if(SoyPrioridadBaja){send Baja(id);
+        receive terminoB[id]();
+//¿sino recino el mensaje como se que termine?
+}
+}
+process Empleado{
+    int idP;
+    while(true){
+    if(not empty(Alta)){
+        recive Alta(idP);
+        atender();
+        send terminoA[idP](); 
+    }
+    else{
+        if(noy empty(Baja)){
+            receive Baja(idP);
+            atender();
+            send terminoB[idP]();
+        }
+    }
+    }
+}

@@ -1,0 +1,19 @@
+/*Se desea modelar el funcionamiento de un banco en el cual existen 5 cajas para realizar
+pagos. Existen P personas que desean pagar. Para esto cada una selecciona la caja donde hay
+menos personas esperando, una vez seleccionada espera a ser atendido. Nota: maximizando
+la concurrencia.*/
+chan pedido(int,int);
+chan pago[1..n]();
+process perona[id:1..P-1]{
+    int Caja=seleccionarCajaConPocaGente();
+    send pedido(id,caja);
+    receive pago[id](libre);
+    //pagar
+}
+process caja[id:1..5]{
+    int idP;
+    while(true){
+    receive pedido(idP,id);
+    send pago[idP]();
+}
+}

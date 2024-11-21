@@ -1,0 +1,44 @@
+/*Hay N personas que deben usar un teléfono público de a una a la vez y de acuerdo al orden
+de llegada, pero dando prioridad a las que tienen que usarlo con urgencia (cada persona ya
+sabe al comenzar si es de tipo urgente o no). Nota: el teléfono NO ES un proceso, es un
+recurso compartido usado por las personas por medio de la función Usar_Teléfono().*/
+process Personas[id: 0..N-1] {
+    string prioridad := obtenerPrioridad(); // "Urgente" o "Normal"
+    admin!solicitar(prioridad, id);         // Enviar solicitud al admin con la prioridad
+    admin?usar();                           // Bloquear hasta recibir permiso para usar el teléfono
+    Usar_Teléfono();                      
+}
+
+process admin {
+    queue urgentes;   // Cola para personas urgentes
+    queue normales;   // Cola para personas normales
+    string prioridad; // Prioridad del solicitante
+    int idP;          // ID del solicitante
+
+    do
+        Personas?solicitar(prioridad, idP) →
+            if (prioridad == "Urgente") 
+                push(urgentes, idP);
+            else 
+                push(normales, idP);
+        [] not empty(urgentes) →
+            idP := pop(urgentes);          // Sacar al primero de la cola urgente
+            Personas[idP]!usar();         // Dar permiso para usar el teléfono
+        [] not empty(normales) →
+            idP := pop(normales);         // Sacar al primero de la cola normal
+            Personas[idP]!usar();         // Dar permiso para usar el teléfono
+    od
+}
+
+Opcion 2
+process persona[id:0..N]{
+    string prioridad;
+    if(SoyUrgente())
+        admin!urgente(prioridad,id);
+    else    
+        admin!normal(priodad,id);
+}
+
+process admin{
+    
+}

@@ -1,0 +1,40 @@
+/*En un examen final hay P alumnos y 3 profesores. Cuando todos los alumnos han llegado
+comienza el examen. Cada alumno resuelve su examen, lo entrega y espera a que alguno de
+los profesores lo corrija y le indique la nota. Los profesores corrigen los exámenes
+respectando el orden en que los alumnos van entregando. Nota: maximizar la concurrencia
+y no generar demora innecesaria.
+*/
+process alumnos[id:1..P]{
+    int nota;
+    admin!llegada()//avisa que llego
+    admin?comenzar()//se queda bloqueado esperando para empezar
+    string examen=hacerExamen();
+    admin!correccion(id,examen);
+    profesor[*]?resultado(nota);
+}
+
+process admin{
+    int cont,idP,idA;
+    string examen;
+    cola fila;
+    // espera que todos los alumnos lleguen
+    do 
+        cant<P;alumno[*]?llegada->cant++
+    od
+    while(cont){
+        alumnos[cont]!comenzar();
+        cont--;
+    }
+    do {cant<p;alumnos[*]?correccion(idA,examen)-> push(fila(idA,examen))
+    [](not empty(fila));profesor[*]?pedido(idP)-> profesor[idP]!para_corregir(pop(fila(idA,examen)))cont++
+    }
+}
+
+process profesor[id:1..3]{
+    string examen;
+    int idA
+    admin!pedido(id);
+    admin?para_corregir(idA,examen);
+    int nota=corregirExamen(examen);
+    alumno[idA]!resultado(nota);
+}

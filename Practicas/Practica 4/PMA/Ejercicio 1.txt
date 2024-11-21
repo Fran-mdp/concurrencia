@@ -1,0 +1,30 @@
+/*Suponga que N personas llegan a la cola de un banco. Para atender a las personas existen
+2 empleados que van atendiendo de a una y por orden de llegada a las personas. */
+chan atencion(string);
+process persona[id:0..n-1]{
+    string solicitud=generarSolicitud();// Genera la solicitud
+    send atencion(solicitud);// Le envia la solicitud al empelado del banco
+}
+process empelado[id:0..1]{
+    string soli;
+    while(true){
+    receive atencion(soli);//recibe la solicitud y atiende a la persona
+    //resolver solicitud
+}
+}
+// opcion b
+chan atencion[1..n](string);
+chan cola(int);
+process persona[id:1..N]{
+    send cola(id);
+    receive atencion[id](oficina);
+    entrar(oficina);
+}
+process empleado[id:1..2]{
+    int siguiente;
+    while(true){
+    receive cola[siguiente];
+    send atencion[siguiente](oficina);
+    atencion();
+}
+}

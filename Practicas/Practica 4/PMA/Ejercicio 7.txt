@@ -1,0 +1,27 @@
+/*En una empresa de software hay 3 programadores que deben arreglar errores informados
+por N clientes. Los clientes continuamente están trabajando, y cuando encuentran un error
+envían un reporte a la empresa para que lo corrija (no tienen que esperar a que se resuelva).
+Los programadores resuelven los reclamos de acuerdo al orden de llegada, y si no hay
+reclamos pendientes trabajan durante una hora en otros programas. Nota: los procesos no
+deben terminar (trabajan en un loop infinito); suponga que hay una función ResolverError que
+simula que un programador está resolviendo un reporte de un cliente, y otra Programar que
+simula que está trabajando en otro programa*/
+chan Hay_errores(string);
+process clientes[id:0..N]{
+    string errores;
+    while(true){
+        send Hay_error(errores);
+    }
+}
+process programador[id:0..N]{
+    string error;
+    while(true){
+        if(not empty(Hay_errores)){
+            receive Hay_errores(error)
+            ResolverError(error);
+     }
+     else { delay 600;    
+            //trabajar en otro programa
+     }
+}
+}

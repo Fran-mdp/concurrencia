@@ -1,0 +1,29 @@
+/*En un banco hay un empleado para cobrar a N personas. Las N personas forman una única
+fila y el empleado los atiende de acuerdo al orden en que llegaron. Cuando una persona es
+llamada por el cajero, le entrega la boleta a pagar y este le devuelve la boleta sellada. Notas:
+cada persona paga una sola boleta*/
+process persona[id:1..n]{
+    string pedido,boleta,boleta_sellada;
+    while(true){
+        admin!llegada(id,boleta)
+        empleado?documentos(boleta_sellada);
+    }
+}
+process admin{
+    int idP;
+    cola fila;
+    string boletas;
+    do persona[*]?pedido-> push(fila(idP,boletas))
+    [](not empty(fila));empleado?pedido()-> empleado!atencion(fila(idP,boletas));
+
+}
+process empleadi{
+    string boletas;
+    int idP;
+    while(true){
+       admin!siguiente();
+        admin?atencion(idP,boletas);
+        boleta=sellarBoleta();
+        persona[idP]!documentos(boleta);
+}
+}
