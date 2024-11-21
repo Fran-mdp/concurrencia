@@ -1,0 +1,88 @@
+/*Resolver con PMS. En la estación de trenes hay una terminal de SUBE que debe ser usada por P personas de
+acuerdo con el orden de llegada. Cuando la persona accede a la terminal, la usa y luego se retira para dejar al
+siguiente. Nota: cada Persona una sólo una vez la terminal.*/
+process persona[id:1..N]{
+    while(true){
+        admin!pedido(id);
+        admin?usar();
+        //uso terminal
+        admin!termine(id)  
+    }
+}
+process admin{
+    int idP;
+    cola fila;
+    bool libre=true;
+    while (true){
+        if(libre=true);persona[*]?pedido(idP)->//si esta libre que atienda
+            libre=false;
+            persona[idP]!usar()
+        [](libre=false);persona[*]?pedido-> //si no esta libre me guardo el orden de llegada
+            push(fila(idP))
+        []persona[*]?termine(idP)->
+            if(empty(fila))
+                libre=true;
+            else    
+                persona[pop(fila(idP))]!usar():
+
+}
+}
+
+/*2) En un negocio de cobros digitales hay P personas que deben pasar por la única caja de cobros para realizar el pago de
+sus boletas. Las personas son atendidas de acuerdo con el orden de llegada, teniendo prioridad aquellos que deben
+pagar menos de 5 boletas de los que pagan más. Adicionalmente, las personas embarazadas y los ancianos tienen
+prioridad sobre los dos casos anteriores. Las personas entregan sus boletas al cajero y el dinero de pago; el cajero les
+devuelve el vuelto y los recibos de pago. Implemente un programa que permita resolver el problema anterior usando
+ADA.*/
+procedure pagos is
+    task type persona;
+    task cajero is
+        entry general(boletas:in string, pago:in string,recibo:out string,vuelto:out int);
+        entry PagoMenosDe5(boletas:in string, pago:in string,recibo:out string,vuelto:out int);
+        entry EmbaAncia(boletas:in string, pago:in string,recibo:out string,vuelto:out int);
+    end cajero;
+    arrPersona:array(1..P)of personas;
+
+    task body personas is
+        pago,vuelto:int;
+        boletas,recibo:string;
+    begin
+        if(soyEmbaAnciano()) then
+            cajero.EmbaAncia(boletas,pago,recibo,vuelto);
+        else
+            if(len(boletas)<5)then
+                cajero.PagoMenosDe5(boletas,pago,recibo,vuelto);
+            else
+                cajero.general(boletas,pago,recibo,vuelto);
+            end if;
+        end if;
+    end persona;
+    task body cajero is
+    begin
+        for i in 1..P
+            loop
+                select
+                    when(PagoMenosDe5´count=0 and EmbaAncia´count=0)=>
+                        accept general(boletas:in string, pago:in string,recibo:out string,vuelto:out int)do
+                            recibo=GenerarRecibo();
+                            vuelto=pago-cobro;
+                        end general;
+                    or
+                    when(EmbaAncia´count=0)=>
+                        accept PagoMenosDe5(boletas:in string, pago:in string,recibo:out string,vuelto:out int)do
+                            recibo=GenerarRecibo();
+                            vuelto=pago-cobro;
+                        end PagoMenosDe5;
+                    or 
+                    accept EmbaAncia(boletas:in string, pago:in string,recibo:out string,vuelto:out int)do
+                        recibo=GenerarRecibo();
+                        vuelto=pago-cobro;
+                    end EmbaAncia
+                end select;
+            end loop
+        end for;
+    end cajero;
+begin
+    null;
+end pagos;
+                    
