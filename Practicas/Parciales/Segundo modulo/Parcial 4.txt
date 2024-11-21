@@ -1,0 +1,116 @@
+/*Resolver con PMA (Pasaje de Mensajes ASINCRÓNICOS) el siguiente problema.
+Simular la atención en un locutorio con 10 cabinas telefónicas, que tiene un empleado
+que se encarga de atender a los clientes. Hay N clientes que al llegar esperan hasta que el
+empleado les indica a que cabina ir, la usan y luego se dirigen al empleado para pagarle.
+El empleado atiende a los clientes en el orden en que hacen los pedidos, pero siempre
+dando prioridad a los que terminaron de usar la cabina. Nota: maximizar la concurrencia;
+suponga que hay una función Cobrar() llamada por el empleado que simula que el
+empleado le cobra al cliente.*/
+chan solicitar (int);
+chan usarCabina[N] (int);
+chan liberar (int, int);
+chan irse[N] ();
+Process Cliente[id: 0..N-1] {
+    int numC;
+    send solicitar (id);
+    receive usarCabina[id](numC);
+    //Usa la cabina Telefónica numC
+    send liberar (id, numC);
+    receive irse[id] ();
+};
+
+Process Empleado {
+    int idC, numC, i;
+    queue libres;
+    for (i=1; i<11; i++) push (libres, i);
+    while (true) {
+        if (not empty (liberar))->
+            receive liberar (idC, numC);
+            Cobrar(numC, idC);
+            send irse[idC] ();
+            push (libres, numC);
+        [](not empty (libres)) and (empty (liberar)) and (not empty (solicitar))->
+            receive solicitar (idC);
+            pop (libres, numC);
+            send usarCabina[idC] (numC);
+
+        fi;
+        };
+    };
+/*Resolver con PMS (Pasaje de Mensajes SINCRÓNICOS) el siguiente problema.
+Simular la atención de una estación de servicio con un único surtidor que tiene un
+empleado que atiende a los N clientes de acuerdo al orden de llegada. Cada cliente espera
+hasta que el empleado termina de cargarle combustible y se retira. Nota: cada cliente
+carga combustible sólo una vez; todos los procesos deben terminar.*/
+process cliente[id:1..N]{
+    admin!pedido(id);
+    empleado?fin_de_carga();//retirarse
+}
+procedure admin{
+    cola fila;
+    int idC;
+    do cliente[*]?pedido(idC)->push(fila(idC))
+    [](not empty(fila));admin?siguiente()->
+        empleado!atender(pop(fila(idC)));
+
+}
+procedure empleado{
+    int idC;
+    while(true){
+        admin!siguiente();
+        admin?atender(idC);
+       cliente[idC]!finde_de_carga();
+}
+}
+/*Resolver con ADA la siguiente situación. En una oficina hay un empleado y P personas
+que van para ser atendidas para realizar un trámite. Cuando una persona llega espera a lo
+sumo 20 minutos a que comience a atenderla el empleado para resolver el trámite que va
+a hacer, y luego se va; si pasó el tiempo se retira sin realizar el trámite. El empleado
+atienden las solicitudes en orden de llegada. Cuando las P personas se han retirado el
+empelado también se retira. Nota: cada persona hace sólo un pedido y termina; suponga
+que existe una función Atender() llamada por el empleado que simula que el empleado
+está resolviendo el trámite del cliente; todas las tareas deben terminar.
+*/
+procedure atencion is
+    task type persona;
+    task empleado is
+        entry pedido(tramite:in String,respuesta:out string);
+        entry termine;
+    end empleado;
+    task admin is
+        entry mevoy();
+    arrPersona:array(1..P)of personas;
+    task body personas is
+        string resultado,tramite;
+    begin
+        select 
+            empleado.pedido(tramite,respuesta);
+        or delay 1200
+             null;
+        end select;
+        admin.mevoy();
+    end persona;
+    task body empleado is 
+        bool fin=false;
+    begin
+        while(not fin) loop
+            select 
+                accept pedido(tramite:in String,respuesta:out string) do
+                    respuesta=resolverTaamite(tramite);
+                end pedido;
+            or 
+                accept termine();
+                fin=true;
+            end select;
+        end loop;      
+    end empleado;
+    task body admin is
+    begin
+        for i in 1..P loop
+            accept mevoy();
+        end loop;
+        empleado.termine();
+    end admin;
+begin 
+    null;
+end atencion;
