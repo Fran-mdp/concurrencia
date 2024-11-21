@@ -1,0 +1,96 @@
+/*Resolver con Pasaje de Mensajes Sincrónicos (PMS) el siguiente problema. En un comedor estudiantil hay un horno microondas
+que debe ser usado por E estudiantes de acuerdo con el orden de llegada. Cuando el estudiante accede al horno, lo usa y luego se
+retira para dejar al siguiente. Nota: cada Estudiante una sólo una vez el horno.*/
+process estudiantes[id:1..E]{
+    admin!pedido(id);
+    admin?usar();
+    //usar microondas
+    admin!termine();
+}
+process admin{
+    bool libre=true;
+    cola fila;
+    int idE;
+    while (true){
+        if(libre=false );estudiante[*]?pedido(idE)->
+            libre=false;
+            estudiante[idE]!usar();
+        [](libre=false);estudiante[*]?pedido(idE)->
+            push(fila(idE));
+        []estudiante[*]?termine()->
+            if(empty(fila))
+                libre=true;
+            else
+                estudiante[pop(fila)]!usar();
+    }
+}
+
+/*Resolver con ADA el siguiente problema. Se debe controlar el acceso a una base de datos. Existen L procesos Lectores y E
+procesos Escritores que trabajan indefinidamente de la siguiente manera:
+• Escritor: intenta acceder para escribir, si no lo logra inmediatamente, espera 1 minuto y vuelve a intentarlo de la misma
+manera.
+• Lector: intenta acceder para leer, si no lo logro en 2 minutos, espera 5 minutos y vuelve a intentarlo de la misma manera.
+Un proceso Escritor podrá acceder si no hay ningún otro proceso usando la base de datos; al acceder escribe y sale de la BD. Un
+proceso Lector podrá acceder si no hay procesos Escritores usando la base de datos; al acceder lee y sale de la BD. Siempre se le
+debe dar prioridad al pedido de acceso para escribir sobre el pedido de acceso para leer.*/
+procedure Db is 
+    task type lectores;
+    task type escritores;
+    task admin is
+        entry lectores();
+        entry escritor();
+        entry salida_lector();
+        entry salida_escritor();
+    end admin;
+    arrEscritores=array (1..E)of escritores;
+    arrLectores=array(1..L)of lectores;
+    task body escritores is
+    begin
+        loop
+            select
+                admin.escritor();}
+                //escribir
+                admin.salida_escritor()
+            or
+                delay 60;
+            end select;
+        end loop;
+    end escritores;
+    task body lectores is
+    begin
+        loop 
+            select
+                admin.lectores();
+                //leer
+                admin.salida_lectores();
+            or
+                delay 120
+                or
+                    delay 300
+            end select;
+        end loop;
+    end lectores;
+    task body admin is
+        int lectores=0;
+    begin
+        loop
+            select
+                when(lectores==0)=>
+                    accept escritores();
+                    //espera que termine de escribir
+                    accept salida_escritor();
+            or
+                when(escritor´count=0)=>
+                    accept lectores();
+                    lectores++;
+            or
+                accept salida_lector();
+                lectores--;
+            end select
+        end loop
+    end admin;
+begin
+    null;
+end db;
+
+                
