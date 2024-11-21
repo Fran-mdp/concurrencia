@@ -1,0 +1,71 @@
+/*Se  debe  simular  una  maratón  con  C  corredores  donde  en  la  llegada  hay  UNA  máquina 
+expendedoras de agua con capacidad para 20 botellas. Además, existe un repositor encargado 
+de reponer las botellas de la máquina. Cuando los C corredores han llegado al inicio comienza 
+la carrera. Cuando un corredor termina la carrera se dirigen a la máquina expendedora, espera 
+su turno (respetando el orden de llegada), saca una botella y se retira. Si encuentra la máquina 
+sin botellas, le avisa al repositor para que cargue nuevamente la máquina con 20 botellas; espera 
+a que se haga la recarga; saca una botella y se retira. Nota: maximizar la concurrencia; mientras 
+se reponen las botellas se debe permitir que otros corredores se encolen.*/
+
+sem mutex = 1;                  // Controla el acceso a la máquina y recursos compartidos
+sem reponer = 0;                // Avisa al repositor para recargar
+sem espera_carrera[C] = {0};    // Barrera inicial para comenzar la carrera
+sem listo = 0;                  // Avisa que las botellas han sido recargadas
+cola fila;                      // Cola para los corredores en espera
+sem barrera = 0;                // Barrera para sincronizar el inicio de la carrera
+int botellas = 20;              // Inicialmente, la máquina tiene 20 botellas
+int contador = 0;               // Contador de corredores listos
+bool libre = true;              // Indica si la máquina está disponible
+
+process corredores[id: 1..C] {
+    // Sincronización inicial (barrera)
+    p(mutex);
+    contador++;
+    if (contador == C) {
+        for (int i = 1; i <= C; i++) {
+            v(barrera); // Liberar la barrera para todos
+        }
+    }
+    v(mutex);
+    p(barrera); // Esperar que todos los corredores estén listos
+
+    // Intentar acceder a la máquina
+    p(mutex);
+    if (libre && botellas > 0) {
+        libre = false; // Bloquear el acceso para otros
+        v(mutex);
+    } else {
+        push(fila, id); // Encolar si no está disponible
+        v(mutex);
+        p(espera_carrera[id]); // Esperar turno
+    }
+
+    // Usar la máquina
+    p(mutex);
+    if (botellas > 0) {
+        botellas--;
+    } else {
+        v(reponer);   // Avisar al repositor si no hay botellas
+        p(listo);     // Esperar recarga
+        botellas--;
+    }
+    v(mutex);
+
+    // Liberar la máquina para el siguiente corredor
+    p(mutex);
+    libre = true;
+    if (!empty(fila)) {
+        int next = pop(fila);  // Sacar al siguiente corredor en cola
+        v(espera_carrera[next]);
+    }
+    v(mutex);
+}
+
+process repositor {
+    while (true) {
+        p(reponer);         // Esperar que un corredor avise
+        botellas = 20;      // Recargar botellas
+        v(listo);           // Avisar que la recarga está completa
+    }
+}
+     

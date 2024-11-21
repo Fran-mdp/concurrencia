@@ -1,0 +1,25 @@
+/*  A una cerealera van T camiones a descargarse trigo y M camiones a descargar maíz. Sólo hay 
+lugar para que 7 camiones a la vez descarguen, pero no pueden ser más de 5 del mismo tipo 
+de cereal. Nota: sólo se pueden usar procesos que representen a los camiones.*/
+sem tot = 7;
+sem st = 5, sm = 5;
+
+Process CamionTrigo [1..T] {
+	P(st);
+	P(tot);
+
+	// descarga
+
+	V(tot);
+	V(st);
+}
+
+Process CamionMaiz [1..M] {
+	P(sm);
+	P(tot);
+
+	// descarga
+
+	V(tot);
+	V(sm);
+}

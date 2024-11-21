@@ -1,0 +1,63 @@
+/*.  Se tiene un curso con 40 alumnos, la maestra entrega una tarea distinta a cada alumno, luego 
+cada alumno realiza su tarea y se la entrega a la maestra para que la corrija, esta revisa la tarea 
+y si  está bien le avisa  al  alumno que  puede irse,  si  la tarea  está mal le indica los  errores, el 
+alumno corregirá esos errores y volverá a entregarle la tarea a la maestra para que realice la 
+corrección nuevamente, esto se repite hasta que la tarea no tenga errores*/
+
+sem espera[40] = {0};         // Semáforo para que cada alumno espere la corrección de su tarea
+sem mutex = 1;                // Mutex para proteger la cola y variables compartidas
+sem tareas_entregadas = 0;    // Semáforo contador para la cantidad de tareas entregadas
+bool correctas[40] = {false}; // Estado de corrección de cada tarea
+string tareas[40];            // Tareas asignadas a los alumnos
+int cont = 0;                 // Contador de tareas correctas
+cola entregados;              // Cola para las tareas entregadas (almacena IDs de alumnos)
+
+// Proceso de los alumnos
+process alumnos[id: 1..40] {
+    string tarea_a_resolver;
+
+    p(mutex);
+    tarea_a_resolver = tareas[id]; // Obtener la tarea asignada
+    v(mutex);
+
+    while (correctas[id] == false) { // Repetir hasta que la tarea esté correcta
+        tarea_a_resolver = ResolverTarea(); // Resolver la tarea
+
+        p(mutex);
+        push(entregados, id); // Entregar la tarea a la maestra
+        v(mutex);
+
+        v(tareas_entregadas); // Desbloquear a la maestra para que revise la tarea
+        p(espera[id]);        // Bloquear al alumno hasta que se le corrija la tarea
+    }
+}
+
+// Proceso de la profesora
+process profesora {
+    string tarea_a_corregir;
+
+    // Asignar tareas a los alumnos
+    p(mutex);
+    for (int i = 1; i <= 40; i++) {
+        tareas[i] = generarTarea();
+    }
+    v(mutex);
+
+    // Corregir tareas entregadas
+    while (cont < 40) {
+        p(tareas_entregadas); // Bloquear a la profesora hasta que un alumno entregue una tarea
+
+        p(mutex);
+        int idA = pop(entregados); // Tomar una tarea de la cola
+        v(mutex);
+
+        tarea_a_corregir = tareas[idA];
+        correctas[idA] = corregirTarea(tarea_a_corregir); // Revisar la tarea
+
+        if (correctas[idA] == true) {
+            cont++; // Incrementar el contador si la tarea está correcta
+        }
+
+        v(espera[idA]); // Avisar al alumno que su tarea fue corregida
+    }
+}

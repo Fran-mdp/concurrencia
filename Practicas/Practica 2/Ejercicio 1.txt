@@ -1,0 +1,39 @@
+/*Un sistema operativo mantiene 5 instancias de un recurso almacenadas en una cola, cuando 
+un proceso necesita usar una instancia del recurso la saca de la cola, la usa y cuando termina 
+de usarla la vuelve a depositar.*/
+sem mutex=1;
+cola instancias;
+process So{
+    p(mutex);
+    if(not empty(instancias)){
+        pop(instancias);
+        v(mutex);
+        //uso de la instancia
+        p(mutex);
+        push(instancias);
+    }
+    v(mutex);
+
+}
+//la solucicon de arriba es erronea ya que si la cola esta vacia se generaria busy waiting
+sem mutex = 1;           // Para proteger el acceso a la cola
+sem recursos = 5;        // Semáforo contador que indica la cantidad de recursos disponibles
+cola instancias;         // Cola para almacenar las instancias del recurso
+
+process So {
+    p(recursos);         // Espera hasta que haya al menos un recurso disponible
+    p(mutex);            // Bloquea el acceso a la cola
+
+    // Sacar una instancia de la cola
+    pop(instancias);
+
+    v(mutex);            // Libera el mutex para que otros procesos puedan acceder
+
+    // Uso de la instancia (sección crítica del recurso)
+
+    p(mutex);            // Bloquea de nuevo para devolver el recurso
+    push(instancias);    // Devuelve la instancia a la cola
+    v(mutex);            // Libera el acceso a la cola
+
+    v(recursos);         // Incrementa el semáforo de recursos disponibles
+}

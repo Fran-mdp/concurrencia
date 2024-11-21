@@ -1,0 +1,77 @@
+/* En un examen final hay P alumnos y 3 profesores. Cuando todos los alumnos han llegado 
+comienza el examen. Cada alumno resuelve su examen, lo entrega y espera a que alguno de 
+los  profesores  lo  corrija  y  le  indique  la  nota.  Los  profesores  corrigen  los  exámenes 
+respectando el orden en que los alumnos van entregando. Nota: todos los procesos deben 
+terminar.*/
+sem mutex = 1;                  // Controla el acceso a las colas y recursos compartidos
+sem barrera = 0;                // Sincroniza a los alumnos antes de iniciar el examen
+int libre = 3;                  // Cantidad de profesores disponibles
+int cont = 0;                   // Contador de alumnos que han llegado
+cola fila;                      // Cola para los alumnos esperando un profesor
+cola corregir;                  // Cola para los exámenes pendientes de corrección
+int notas[P];                   // Arreglo de notas para los alumnos
+sem listo[P] = {0};             // Semáforos para que los alumnos esperen sus notas
+sem examenes_listos = 0;        // Semáforo para avisar a los profesores que hay exámenes
+
+process alumnos[id: 1..P] {
+    string examen;
+
+    // Sincronización de llegada
+    p(mutex);
+    cont++;
+    if (cont == P) {
+        for (int i = 1; i <= P; i++) {
+            v(barrera); // Liberar la barrera para todos los alumnos
+        }
+    }
+    v(mutex);
+    p(barrera);
+
+    // Intentar obtener un profesor disponible
+    p(mutex);
+    if (libre > 0) {
+        libre--; // Tomar un profesor
+        v(mutex);
+    } else {
+        // Encolar si no hay profesores disponibles
+        push(fila, id);
+        v(mutex);
+        p(listo[id]); // Esperar a ser despertado
+    }
+
+    // Resolver el examen
+    examen = HacerExamen();
+
+    // Entregar el examen
+    p(mutex);
+    push(corregir, {id, examen}); // Agregar el ID y el examen a la cola
+    v(examenes_listos);          // Notificar a los profesores
+    v(mutex);
+
+    // Esperar la nota
+    p(listo[id]);
+
+    // Liberar al siguiente en la cola
+    p(mutex);
+    if (!empty(fila)) {
+        int next = pop(fila); // Despertar al siguiente alumno en la cola
+        v(listo[next]);
+    } else {
+        libre++; // Liberar al profesor
+    }
+    v(mutex);
+}
+
+process profesor[id: 1..3] {
+    while (true) {
+        p(examenes_listos);  // Esperar a que haya un examen listo
+
+        // Corregir el examen
+        p(mutex);
+        auto [idA, examen] = pop(corregir); // Sacar el examen y el ID del alumno
+        v(mutex);
+        int nota = CorregirExamen(examen); // Asignar la nota
+        notas[idA] = nota;
+        v(listo[idA]);
+    }
+}
